@@ -4,6 +4,7 @@ import { BsFacebook } from 'react-icons/bs'
 import { GoogleLogin, useGoogleLogin } from '@react-oauth/google';
 import FacebookLogin from 'react-facebook-login';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 function Login() {
     const navigate = useNavigate()
@@ -11,13 +12,6 @@ function Login() {
         console.log('Logged in as: ' + JSON.parse(JSON.stringify(googleUser.getBasicProfile().getName())));
     };
 
-    const login = useGoogleLogin({
-        onSuccess: codeResponse => console.log(codeResponse),
-    });
-
-    const onFailure = (error) => {
-        console.log(error, 'this is error');
-    };
 
     function parseJwt(token) {
         const base64Url = token.split('.')[1];
@@ -25,7 +19,16 @@ function Login() {
         const jsonPayload = decodeURIComponent(atob(base64).split('').map(function (c) {
             return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
         }).join(''));
-        localStorage.setItem('dataKey', JSON.stringify(jsonPayload));
+        const ob = JSON.parse(jsonPayload)
+        const obj = {
+            name:ob.name,
+            email:ob.email
+        }
+
+        axios.post('http://localhost:8000/user',obj)
+        .then((res)=>{console.log(res)})
+        .catch((err)=>{console.log(err)})
+
         navigate('/Chatbox')
         return JSON.parse(jsonPayload);
     };
