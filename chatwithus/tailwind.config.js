@@ -9,8 +9,15 @@ module.exports = {
     extend: {
       colors: {
         my_color: 'white',
+        reciver:'#FACCA6',
+        sender:'#B2B2B2'
       },
-
+      height: {
+        '128': '600px',
+      },
+      spacing:{
+        '128':'600px'
+      }
     },
   },
   plugins: [
