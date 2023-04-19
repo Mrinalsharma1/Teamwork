@@ -1,6 +1,10 @@
 import React, { useEffect, useState } from 'react'
 import io from 'socket.io-client';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios'
+import { useDispatch } from 'react-redux';
+import { fetchUser } from '../redux/userSlice';
+import { chatUser } from '../redux/chatuserSlice';
 
 const Chatbox = () => {
     const [data, setData] = useState([])
@@ -8,23 +12,39 @@ const Chatbox = () => {
     const [socket, setSocket] = useState(null);
     const [user, setUser] = useState([])
     const navigate = useNavigate()
+    const dispatch = useDispatch()
 
     useEffect(() => {
+        // console.log('useEffect 1')
+        const data = JSON.parse(localStorage.getItem('dataKey'))
+        setData(data)
         const newSocket = io('http://localhost:8000');
         setSocket(newSocket);
-        return () => newSocket.disconnect();
+
+        const obj = {
+            email:data.email
+        }
+        axios.post('http://localhost:8000/userdata',obj)
+        .then((res)=>{
+            dispatch(fetchUser(res.data))
+        })
+        .catch((err)=>{console.log(err)})
+        // return () => newSocket.disconnect();
     }, []);
 
     useEffect(() => {
+        // console.log('useEffect 2')
+        const data = JSON.parse(localStorage.getItem('dataKey'))
+        setData(data)
+    }, [user])
+
+    useEffect(() => {
+        // console.log('use effect')
         if (socket) {
             socket.emit('new user', { name: data.name, picture: data.picture , email:data.email })
-            socket.on('message', (data) => {
-                console.log('Received message:', data);
-            });
             socket.on('user', (data) => {
                 console.log(`new user ${data.name}`)
                 if (localStorage.USERS !== 'undefined' && localStorage.USERS) {
-                    console.log('if')
                     let arr = JSON.parse(localStorage.USERS)
                     let flag = false;
                     for (var ele in arr) {
@@ -36,52 +56,44 @@ const Chatbox = () => {
                         arr.push(data)
                         localStorage.USERS = JSON.stringify(arr);
                         let storedNames = JSON.parse(localStorage.USERS);
-
-                        console.log(`stored names ${storedNames}`)
                     }
                     let storedNames = JSON.parse(localStorage.USERS);
+                    console.log(storedNames)
                     setUser(storedNames)
-                    user.map((e)=>{
-                        console.log('e',e['picture'])
-                    })
                 } else {
                     const arr = [];
                     arr.push(data);
                     const jsonArray = JSON.stringify(arr);
                     localStorage.setItem('USERS', jsonArray);
-                    console.log(localStorage.getItem('USERS'))
                 }
-
             })
         }
     }, [socket]);
 
-    const sendMessage = () => {
-        console.log('message', socket)
-        if (socket) {
-            socket.emit('new user', message);
-            setMessage('');
-
-        }
-    };
-
-    useEffect(() => {
-        const data = JSON.parse(JSON.parse(localStorage.getItem('dataKey')))
-        console.log(data.picture)
-        setData(data)
-    }, [user])
     
-    const chatroom = (user)=>{
-        console.log(user)
-        navigate('/Chatbox/chat-room')
+    const chatroom = (usr)=>{
+        const email = {
+            email:usr.email
+        }
+        axios.post('http://localhost:8000/userdata',email)
+        .then((res)=>{
+            dispatch(chatUser(res.data))
+            const chatroomid=res.data.user._id
+            console.log(`chatroomid ${chatroomid}`);
+            let user = res.data
+            user = JSON.parse(JSON.stringify(user))
+            user.user['chatroomid'] = chatroomid
+            localStorage.setItem('current-user',JSON.stringify(user))
+            if(socket){
+                socket.emit('chatroom',chatroomid)
+            }
+            navigate('/Chatbox/chat-room')
+        })
+        .catch((err)=>console.log(err))
     }
 
     return (
         <div className='flex items-center justify-center h-screen bg-indigo-700'>
-            <div style={{ display: 'none' }}>
-                <input type="text" value={message} onChange={(e) => setMessage(e.target.value)} />
-                <button onClick={sendMessage}>Send Message</button>
-            </div>
             <div className=' w-auto h-96  flex flex-col justify-center'>
                 <div className='w-96 h-16 mt-4 flex rounded-2xl bg-white'>
 
