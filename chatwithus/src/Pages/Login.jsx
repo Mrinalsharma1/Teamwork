@@ -1,18 +1,14 @@
 import React from 'react'
-import { AiOutlineGoogle, AiFillApple } from 'react-icons/ai'
-import { BsFacebook } from 'react-icons/bs'
-import { GoogleLogin, useGoogleLogin } from '@react-oauth/google';
+import { GoogleLogin} from '@react-oauth/google';
 import FacebookLogin from 'react-facebook-login';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import {useDispatch } from 'react-redux';
+import { add } from '../redux/userSlice'
 
 function Login() {
+    const dispatch = useDispatch()
     const navigate = useNavigate()
-    const onSuccess = (googleUser) => {
-        console.log('Logged in as: ' + JSON.parse(JSON.stringify(googleUser.getBasicProfile().getName())));
-    };
-
-
     function parseJwt(token) {
         const base64Url = token.split('.')[1];
         const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
@@ -20,15 +16,18 @@ function Login() {
             return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
         }).join(''));
         const ob = JSON.parse(jsonPayload)
+        
         const obj = {
-            name:ob.name,
-            email:ob.email
+            name: ob.name,
+            email: ob.email,
+            picture: ob.picture
         }
 
-        axios.post('http://localhost:8000/user',obj)
-        .then((res)=>{console.log(res)})
-        .catch((err)=>{console.log(err)})
-
+        axios.post('http://localhost:8000/user', obj)
+            .then((res) => { console.log(res) })
+            .catch((err) => { console.log(err) })
+        localStorage.setItem('dataKey', JSON.stringify(obj));
+        dispatch(add(obj))
         navigate('/Chatbox')
         return JSON.parse(jsonPayload);
     };
@@ -42,13 +41,10 @@ function Login() {
         <div className='flex items-center justify-center h-screen bg-indigo-700'>
             <section className=" dark:bg-gray-900 w-80 rounded-md   px-8 py-4">
                 <div className='flex flex-col space-y-4 my-3'>
-
                     <div className='bg-my_color py-2 float-right rounded-xl'>
                         <GoogleLogin
                             onSuccess={credentialResponse => {
                                 console.log(">>>>>>>>>>>>>", parseJwt(credentialResponse.credential));
-                                // console.log(credentialResponse)
-
                             }}
                             onError={() => {
                                 console.log('Login Failed');
